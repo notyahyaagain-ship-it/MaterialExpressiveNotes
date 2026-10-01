@@ -16,7 +16,33 @@ jobs:
       - name: Extract project
         run: |
           unzip -q MaterialExpressiveNotes.zip -d project
+      - name: Fix Android build configuration
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle.kts")
+          s = p.read_text()
+          s = s.replace(
+              "targetSdk = 35\n",
+              """targetSdk = 35
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+"""
+          )
+          if "material-icons-core" not in s:
+              s = s.replace(
+                  'implementation("androidx.compose.material3:material3")',
+                  'implementation("androidx.compose.material3:material3")\n    implementation("androidx.compose.material:material-icons-core")'
+              )
+          p.write_text(s)
+          PY
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
